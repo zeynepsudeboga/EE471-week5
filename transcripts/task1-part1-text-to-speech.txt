@@ -1,0 +1,140 @@
+▗ ▗   ▖ ▖  Claude Code v2.1.304
+           Opus 5.5 · Claude Pro
+ ▘▘   ▝▝   ~/EE471-week5
+
+
+❯ Build Part 1 (text to speech) inside the Week-5-Task-1 folder. Do not touch   
+  files outside it, and never print or commit the Azure key.                    
+                                                                                
+  A Flask website on port 5001:                                                 
+  - Week-5-Task-1/app.py, Week-5-Task-1/templates/index.html,                   
+  Week-5-Task-1/static/script.js, Week-5-Task-1/static/style.css                
+    (keep exactly these file names; another branch will add speech to text to   
+  the same files later)                                                         
+  - Load SPEECH_KEY and SPEECH_REGION from the .env file in the repo root with  
+  python-dotenv. The key must stay on the server and must never be sent to the  
+  browser.                                                                      
+                                                                                
+  Feature:                                                                      
+  - The user types text, picks a voice from a small list (include Turkish       
+  tr-TR-EmelNeural and English en-US-AvaMultilingualNeural) and clicks          
+  "Convert".                                                                    
+  - POST /api/tts with JSON {"text", "voice"}: synthesize with the Azure Speech 
+  SDK and return the audio as a WAV file (use audio_config=None and             
+  result.audio_data, do not play on the server speaker).                        
+  - The page plays the audio with an <audio> player and offers a "Download"     
+  link for the .wav file.                                                       
+  - Errors as JSON {"error": "..."}: 400 for empty or too long text (max 1000   
+  characters) or unknown voice, 502 if Azure synthesis is canceled (include the 
+  cancellation reason in the message), and show them in a red error area on     
+  the page.                                                                     
+                                                                                
+  Keep it simple and readable, with short comments where the reason isn't       
+  obvious. When done, test /api/tts once and tell me how to run it.             
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Write(Week-5-Task-1/app.py)
+  ⎿  Wrote 72 lines to Week-5-Task-1/app.py
+      1 import os
+      2 from pathlib import Path
+      3 
+      4 import azure.cognitiveservices.speech as speechsdk
+      5 from dotenv import load_dotenv
+        est
+      7 
+      8 # The .env file lives in the repo root, one level above this fold
+        er.
+      9 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+     … +73 lines (ctrl+o to expand)
+
+⏺ Write(Week-5-Task-1/templates/index.html)
+  ⎿  Wrote 40 lines to Week-5-Task-1/templates/index.html
+       1 <!DOCTYPE html>
+       2 <html lang="en">
+       3 <head>
+       5   <meta name="viewport" content="width=device-width, initial-sca
+         le=1.0">
+       6   <title>Azure Speech Demo</title>
+       7   <link rel="stylesheet" href="{{ url_for('static', filename='st
+       8 </head>
+       9 <body>
+      10   <main>
+     … +34 lines (ctrl+o to expand)
+
+⏺ Write(Week-5-Task-1/static/script.js)
+  ⎿  Wrote 49 lines to Week-5-Task-1/static/script.js
+      1 // ---------- Text to Speech ----------
+      2 const ttsText = document.getElementById("tts-text");
+      3 const ttsCount = document.getElementById("tts-count");
+      4 const ttsVoice = document.getElementById("tts-voice");
+      5 const ttsButton = document.getElementById("tts-convert");
+      6 const ttsError = document.getElementById("tts-error");
+      7 const ttsResult = document.getElementById("tts-result");
+      8 const ttsAudio = document.getElementById("tts-audio");
+      9 const ttsDownload = document.getElementById("tts-download");
+     … +41 lines (ctrl+o to expand)
+
+⏺ Write(Week-5-Task-1/static/style.css)
+  ⎿  Wrote 86 lines to Week-5-Task-1/static/style.css
+       1 body {
+       2   margin: 0;
+       3   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+       4   background: #f4f5f7;
+       5   color: #222;
+       6 }
+       7 
+       8 main {
+       9   max-width: 640px;
+      10   margin: 40px auto;
+     … +76 lines (ctrl+o to expand)
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ I've built the text-to-speech site in Week-5-Task-1/, and a test of /api/tts
+  against Azure worked. I didn't touch any file outside that folder, didn't
+  print the key, and haven't committed anything.
+
+  Test results
+  - Success: a Turkish sentence with tr-TR-EmelNeural returned 200 audio/wav,
+    about 120 KB. The file is a valid WAV (24 kHz, 16-bit, mono).
+  - Empty text: returned 400 {"error": "Please enter some text."}.
+  - Unknown voice: returned 400 {"error": "Unknown voice."}.
+  - Key safety: I searched the served HTML page for the key and it isn't there.
+    The key is only read in app.py on the server.
+  - Not tested: the 502 path (when Azure cancels) and the over-1000-character
+    check. I didn't trigger either one, so they haven't been run yet.
+
+  What it does
+  - app.py: loads ../.env with python-dotenv and serves the page on port 5001.
+    POST /api/tts checks the text (not empty, at most 1000 characters) and the
+    voice, then synthesizes with audio_config=None and sends result.audio_data
+    back as a WAV. If Azure cancels, it returns 502 with the cancellation reason
+    and Azure's error details.
+  - Voices: besides the two you asked for (tr-TR-EmelNeural and
+    en-US-AvaMultilingualNeural), I added tr-TR-AhmetNeural and
+    en-US-AndrewMultilingualNeural so each language has a male and a female
+    voice. They're listed in the VOICES dict in app.py if you want to change
+    them.
+  - The page: has a text box with a character counter, a voice dropdown and a
+    "Convert" button. The audio plays in an <audio> player with a "Download"
+    link for speech.wav. Errors show in a red box.
+  - Structure for the next branch: the TTS markup is in its own <section 
+    id="tts"> and the JS and CSS use tts- prefixes. That way the speech-to-text
+    branch can add its own section to the same four files without clashing.
+
+  How to run it
+  cd ~/EE471-week5
+  source .venv/bin/activate          # flask, python-dotenv, 
+  azure-cognitiveservices-speech are already installed
+  python Week-5-Task-1/app.py
+  Then open http://localhost:5001.
+
+  On a fresh machine, run pip install flask python-dotenv 
+  azure-cognitiveservices-speech first. The repo has no requirements.txt and I
+  didn't add one so I'd stay inside the folder. .env is already in .gitignore,
+  so the key won't be committed.
+
+✻ Worked for 1m 2s · done 2:02 PM
+
+※ recap: You wanted a Flask text-to-speech site in Week-5-Task-1, and it's built and tested against Azure, with WAV audio, playback and download working. Next, run python Week-5-Task-1/app.py from the venv, try it at localhost:5001, then commit. (disable recaps in /config)

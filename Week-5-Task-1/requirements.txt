@@ -1,0 +1,4 @@
+flask
+azure-cognitiveservices-speech
+python-dotenv
+imageio-ffmpeg
