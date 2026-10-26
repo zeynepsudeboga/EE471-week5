@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure Speech Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Azure Speech Demo</h1>
+
+    <section id="tts">
+      <h2>Text to Speech</h2>
+
+      <label for="tts-text">Text</label>
+      <textarea id="tts-text" rows="6" maxlength="1000" placeholder="Type something…"></textarea>
+      <div class="hint"><span id="tts-count">0</span> / 1000</div>
+
+      <label for="tts-voice">Voice</label>
+      <select id="tts-voice">
+        {% for id, name in voices.items() %}
+        <option value="{{ id }}">{{ name }}</option>
+        {% endfor %}
+      </select>
+
+      <button id="tts-convert">Convert</button>
+
+      <div id="tts-error" class="error" hidden></div>
+
+      <div id="tts-result" hidden>
+        <audio id="tts-audio" controls></audio>
+        <a id="tts-download" download="speech.wav">Download</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
