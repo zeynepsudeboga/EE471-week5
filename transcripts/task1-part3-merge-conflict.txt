@@ -1,0 +1,482 @@
+▗ ▗   ▖ ▖  Claude Code v2.1.310
+           Opus 5.5 · Claude Pro
+ ▘▘   ▝▝   ~/EE471-week5
+
+
+❯ We are in the middle of a git merge on main: the text-to-speech version       
+  (HEAD) and the speech-to-text branch both created the same 4 files in         
+  Week-5-Task-1, so app.py, templates/index.html, static/script.js and          
+  static/style.css have add/add conflicts.                                      
+                                                                                
+  Resolve the conflicts by combining both features into ONE website:            
+  - One Flask app (one app = Flask(...), one .env loading, port 5001) with both 
+  /api/tts and /api/stt and all their error handling unchanged.                 
+  - One page with two clearly separated sections (or tabs): "Text to Speech"    
+  and "Speech to Text", each with its own controls and its own error area.      
+  - One script.js and one style.css that support both sections without          
+  duplicated helper code.                                                       
+  - Remove every conflict marker. Keep requirements.txt.                        
+  - Do NOT run git add or git commit; I will do that myself.                    
+                                                                                
+  Then test both /api/tts and /api/stt once and tell me how to run it.          
+
+  Listed 2 directories, ran 1 shell command (ctrl+o to expand)
+
+⏺ Both sides are clean and only overlap on shared scaffolding, so I'll write the
+  merged versions directly.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Now the merged app.py:
+
+⏺ Bash(python3 - <<'EOF'
+      import re…)
+  ⎿  import os
+     import subprocess
+     import tempfile
+     … +77 lines (ctrl+o to expand)
+  ⎿  Updated Week-5-Task-1/app.py (+6 -18)
+       1  import os
+       2 -<<<<<<< HEAD                                                   
+       3 -from pathlib import Path                                       
+       4 -                                                               
+       5 -import azure.cognitiveservices.speech as speechsdk             
+       6 -from dotenv import load_dotenv                                 
+       7 -from flask import Flask, Response, jsonify, render_template, re
+         -quest                                                          
+       8 -=======                                                        
+       2  import subprocess
+       3  import tempfile
+       4  import threading
+     ...
+       7  import azure.cognitiveservices.speech as speechsdk
+       8  import imageio_ffmpeg
+       9  from dotenv import load_dotenv
+      17 -from flask import Flask, jsonify, render_template, request     
+      18 ->>>>>>> speech-to-text                                         
+      10 +from flask import Flask, Response, jsonify, render_template, re
+         +quest                                                          
+      11  
+      12  # The .env file lives in the repo root, one level above this fo
+          lder.
+      13  load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+     ...
+      15  SPEECH_KEY = os.getenv("SPEECH_KEY")
+      16  SPEECH_REGION = os.getenv("SPEECH_REGION")
+      17  
+      26 -<<<<<<< HEAD                                                   
+      18 +# ---------- Text to Speech settings ----------                
+      19  MAX_TEXT_LENGTH = 1000
+      20  
+      21  VOICES = {
+     ...
+      25      "en-US-AndrewMultilingualNeural": "English (US) – Andrew (m
+          ultilingual)",
+      26  }
+      27  
+      36 -app = Flask(__name__)                                          
+      37 -=======                                                        
+      28 +# ---------- Speech to Text settings ----------                
+      29  LANGUAGES = {
+      30      "tr-TR": "Turkish",
+      31      "en-US": "English (US)",
+     ...
+      35  
+      36  app = Flask(__name__)
+      37  app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 25 MB up
+          load limit
+     … 32 more lines (ctrl+o to expand)
+
+⏺ Verify the route bodies are byte-identical to each side:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Only the intended lines changed. Now the page, script, and stylesheet.
+
+⏺ Write(Week-5-Task-1/templates/index.html)
+  ⎿  Added 4 lines, removed 4 lines
+      10    <main>
+      11      <h1>Azure Speech Demo</h1>
+      12  
+      13 -<<<<<<< HEAD                                                   
+      13      <section id="tts">
+      14        <h2>Text to Speech</h2>
+      15  
+      16        <label for="tts-text">Text</label>
+      17        <textarea id="tts-text" rows="6" maxlength="1000" placeho
+          lder="Type something…"></textarea>
+      19 -      <div class="hint"><span id="tts-count">0</span> / 1000</d
+         -iv>                                                            
+      18 +      <div class="hint counter"><span id="tts-count">0</span> /
+         + 1000</div>                                                    
+      19  
+      20        <label for="tts-voice">Voice</label>
+      21        <select id="tts-voice">
+     ...
+      31        <div id="tts-result" hidden>
+      32          <audio id="tts-audio" controls></audio>
+      33          <a id="tts-download" download="speech.wav">Download</a>
+      35 -=======                                                        
+      34 +      </div>                                                   
+      35 +    </section>                                                 
+      36 +                                                               
+      37      <section id="stt">
+      38        <h2>Speech to Text</h2>
+      39  
+     ...
+      63          <label for="stt-text">Transcript</label>
+      64          <textarea id="stt-text" rows="6" readonly></textarea>
+      65          <button id="stt-copy">Copy</button>
+      65 ->>>>>>> speech-to-text                                         
+      66        </div>
+      67      </section>
+      68    </main>
+
+⏺ Write(Week-5-Task-1/static/script.js)
+  ⎿  Added 39 lines, removed 26 lines
+       1 -<<<<<<< HEAD                                                   
+       1 +// ---------- Shared helpers ----------                        
+       2 +function showError(errorEl, message) {                         
+       3 +  errorEl.textContent = message;                               
+       4 +  errorEl.hidden = false;                                      
+       5 +}                                                              
+       6 +                                                               
+       7 +function hideError(errorEl) {                                  
+       8 +  errorEl.hidden = true;                                       
+       9 +}                                                              
+      10 +                                                               
+      11 +// Throws with the server's JSON error message (or the status c
+         +ode) if the response failed.                                   
+      12 +async function ensureOk(response) {                            
+      13 +  if (response.ok) return;                                     
+      14 +  const data = await response.json().catch(() => ({}));        
+      15 +  throw new Error(data.error || `Request failed (${response.sta
+         +tus})`);                                                       
+      16 +}                                                              
+      17 +                                                               
+      18  // ---------- Text to Speech ----------
+      19  const ttsText = document.getElementById("tts-text");
+      20  const ttsCount = document.getElementById("tts-count");
+     ...
+      32  });
+      33  
+      34  ttsButton.addEventListener("click", async () => {
+      19 -  ttsError.hidden = true;                                      
+      35 +  hideError(ttsError);                                         
+      36    ttsButton.disabled = true;
+      37    ttsButton.textContent = "Converting…";
+      38  
+     ...
+      42        headers: { "Content-Type": "application/json" },
+      43        body: JSON.stringify({ text: ttsText.value, voice: ttsVoi
+          ce.value }),
+      44      });
+      45 +    await ensureOk(response);                                  
+      46  
+      30 -    if (!response.ok) {                                        
+      31 -      const data = await response.json().catch(() => ({}));    
+      32 -      throw new Error(data.error || `Request failed (${response
+         -.status})`);                                                   
+      33 -    }                                                          
+      34 -                                                               
+      47      // Free the previous audio blob before creating a new one.
+      48      if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
+      49      ttsAudioUrl = URL.createObjectURL(await response.blob());
+     ...
+      53      ttsResult.hidden = false;
+      54      ttsAudio.play();
+      55    } catch (err) {
+      44 -    ttsError.textContent = err.message;                        
+      45 -    ttsError.hidden = false;                                   
+      56 +    showError(ttsError, err.message);                          
+      57    } finally {
+      58      ttsButton.disabled = false;
+      59      ttsButton.textContent = "Convert";
+      60    }
+      50 -=======                                                        
+      61 +});                                                            
+      62 +                                                               
+      63 +// ---------- Speech to Text ----------                        
+      64  const sttLanguage = document.getElementById("stt-language");
+      65  const sttFile = document.getElementById("stt-file");
+      66  const sttUpload = document.getElementById("stt-upload");
+     ...
+      77  let mediaRecorder = null;
+      78  let recordedBlob = null;
+      79  
+      67 -function showError(message) {                                  
+      68 -  sttError.textContent = message;                              
+      69 -  sttError.hidden = false;                                     
+      70 -}                                                              
+      71 -                                                               
+      80  // Sends a file/blob to the server and shows the transcript or 
+          the error.
+      81  async function transcribe(blob, filename, button) {
+      74 -  sttError.hidden = true;                                      
+      82 +  hideError(sttError);                                         
+      83    sttResult.hidden = true;
+      84    button.disabled = true;
+      85    sttStatus.textContent = "Transcribing…";
+     ...
+       88    form.append("audio", blob, filename);
+       89    form.append("language", sttLanguage.value);
+       90  
+       91 +  let response;                                               
+       92    try {
+       84 -    const response = await fetch("/api/stt", { method: "POST",
+          - body: form });                                               
+       93 +    response = await fetch("/api/stt", { method: "POST", body:
+          + form });                                                     
+       94 +  } catch (err) {                                             
+       95 +    showError(sttError, "Could not reach the server: " + err.m
+          +essage);                                                      
+       96 +    button.disabled = false;                                  
+       97 +    sttStatus.textContent = "";                               
+       98 +    return;                                                   
+       99 +  }                                                           
+      100 +                                                              
+      101 +  try {                                                       
+      102 +    await ensureOk(response);                                 
+      103      const data = await response.json();
+       86 -    if (!response.ok) {                                       
+       87 -      showError(data.error || `Request failed (${response.stat
+          -us})`);                                                       
+       88 -      return;                                                 
+       89 -    }                                                         
+      104      sttText.value = data.text;
+      105      sttResult.hidden = false;
+      106    } catch (err) {
+       93 -    showError("Could not reach the server: " + err.message);  
+      107 +    showError(sttError, err.message);                         
+      108    } finally {
+      109      button.disabled = false;
+      110      sttStatus.textContent = "";
+     ...
+      114  sttUpload.addEventListener("click", () => {
+      115    const file = sttFile.files[0];
+      116    if (!file) {
+      103 -    showError("Please choose an audio file first.");          
+      117 +    showError(sttError, "Please choose an audio file first.");
+      118      return;
+      119    }
+      120    transcribe(file, file.name, sttUpload);
+      121  });
+      122  
+      123  sttStart.addEventListener("click", async () => {
+      110 -  sttError.hidden = true;                                     
+      124 +  hideError(sttError);                                        
+      125    let stream;
+      126    try {
+      127      stream = await navigator.mediaDevices.getUserMedia({ audio
+           : true });
+      128    } catch (err) {
+      115 -    showError("Microphone access was denied or is unavailable.
+          -");                                                           
+      129 +    showError(sttError, "Microphone access was denied or is un
+          +available.");                                                 
+      130      return;
+      131    }
+      132  
+     ...
+      165    await navigator.clipboard.writeText(sttText.value);
+      166    sttCopy.textContent = "Copied!";
+      167    setTimeout(() => (sttCopy.textContent = "Copy"), 1500);
+      154 ->>>>>>> speech-to-text                                        
+      168  });
+
+⏺ Write(Week-5-Task-1/static/style.css)
+  ⎿  Added 21 lines, removed 31 lines
+      25  
+      26  label {
+      27    display: block;
+      28 -<<<<<<< HEAD                                                   
+      29 -  margin: 12px 0 4px;                                          
+      30 -=======                                                        
+      28    margin: 16px 0 4px;
+      32 ->>>>>>> speech-to-text                                         
+      29    font-weight: 600;
+      30  }
+      31  
+     ...
+      39    border-radius: 4px;
+      40  }
+      41  
+      46 -<<<<<<< HEAD                                                   
+      47 -.hint {                                                        
+      48 -  text-align: right;                                           
+      49 -=======                                                        
+      42  input[type="file"] {
+      43    display: block;
+      44    margin-bottom: 4px;
+      45  }
+      46  
+      47  .hint {
+      56 ->>>>>>> speech-to-text                                         
+      48    font-size: 0.85em;
+      49    color: #777;
+      50  }
+      51  
+      52 +.counter {                                                     
+      53 +  text-align: right;                                           
+      54 +}                                                              
+      55 +                                                               
+      56  button {
+      62 -<<<<<<< HEAD                                                   
+      63 -  margin-top: 16px;                                            
+      64 -=======                                                        
+      57    margin-top: 8px;
+      66 ->>>>>>> speech-to-text                                         
+      58    padding: 10px 20px;
+      59    font: inherit;
+      60    color: #fff;
+     ...
+      66  
+      67  button:disabled {
+      68    background: #8ab8e0;
+      78 -<<<<<<< HEAD                                                   
+      79 -  cursor: wait;                                                
+      80 -=======                                                        
+      69    cursor: default;
+      70  }
+      71  
+     ...
+       76    gap: 8px;
+       77  }
+       78  
+       91 -#stt-preview {                                                
+       92 -  display: block;                                             
+       93 -  width: 100%;                                                
+       94 -  margin-top: 12px;                                           
+       95 -}                                                             
+       96 -                                                              
+       97 -#stt-preview[hidden] {                                        
+       98 -  display: none;                                              
+       99 ->>>>>>> speech-to-text                                        
+      100 -}                                                             
+      101 -                                                              
+       79  .error {
+       80    margin-top: 16px;
+       81    padding: 10px 12px;
+     ...
+       84    border: 1px solid #f1bbbc;
+       85    border-radius: 4px;
+       86  }
+      110 -<<<<<<< HEAD                                                  
+       87  
+       88 +/* ---------- Text to Speech ---------- */                    
+       89 +#tts-convert {                                                
+       90 +  margin-top: 16px;                                           
+       91 +}                                                             
+       92 +                                                              
+       93  #tts-result {
+       94    margin-top: 16px;
+       95    display: flex;
+     ...
+      101    display: none;
+      102  }
+      103  
+      123 -audio {                                                       
+      104 +#tts-result audio {                                           
+      105    flex: 1;
+      106  }
+      126 -=======                                                       
+      127 ->>>>>>> speech-to-text                                        
+      107 +                                                              
+      108 +/* ---------- Speech to Text ---------- */                    
+      109 +#stt-preview {                                                
+      110 +  display: block;                                             
+      111 +  width: 100%;                                                
+      112 +  margin-top: 12px;                                           
+      113 +}                                                             
+      114 +                                                              
+      115 +#stt-preview[hidden] {                                        
+      116 +  display: none;                                              
+      117 +}                                                             
+
+⏺ Let me tidy the STT fetch so cleanup lives in one finally:
+
+⏺ Update(Week-5-Task-1/static/script.js)
+  ⎿  Added 3 lines, removed 10 lines
+       88    form.append("audio", blob, filename);
+       89    form.append("language", sttLanguage.value);
+       90  
+       91 -  let response;                                               
+       91    try {
+       93 -    response = await fetch("/api/stt", { method: "POST", body:
+          - form });                                                     
+       94 -  } catch (err) {                                             
+       95 -    showError(sttError, "Could not reach the server: " + err.m
+          -essage);                                                      
+       96 -    button.disabled = false;                                  
+       97 -    sttStatus.textContent = "";                               
+       98 -    return;                                                   
+       99 -  }                                                           
+      100 -                                                              
+      101 -  try {                                                       
+       92 +    const response = await fetch("/api/stt", { method: "POST",
+          + body: form }).catch((err) => {                               
+       93 +      throw new Error("Could not reach the server: " + err.mes
+          +sage);                                                        
+       94 +    });                                                       
+       95      await ensureOk(response);
+       96      const data = await response.json();
+       97      sttText.value = data.text;
+
+⏺ Now start the server and test both endpoints.
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ Both work. Stopping the test server:
+
+⏺ Stop Task
+  ⎿  cd /Users/zeynepsudeboga/EE471-week5/Week-5-Task-1 &&
+     ../.venv/bin/python app.py · stopped
+
+⏺ I merged the text-to-speech and speech-to-text branches into one website, and
+  both endpoints worked when I tested them. All conflict markers are gone and
+  requirements.txt is unchanged. I didn't run git add or git commit.
+
+  What changed
+  - app.py: one Flask app on port 5001 that loads .env once and has both
+    /api/tts and /api/stt. I compared it line by line against each branch, and
+    the route code and error handling are unchanged. The only edits are the
+    merged imports and index() now passing both voices and languages to the
+    page.
+  - templates/index.html: one page with two separate sections, "Text to Speech"
+    and "Speech to Text". Each has its own controls and its own error box.
+  - static/script.js: one file. The error-display code is now shared helpers
+    (showError, hideError and ensureOk) used by both sections, so it isn't
+    written twice. The error messages are the same as before.
+  - static/style.css: one file. Where the branches set different values I picked
+    one: 16px label spacing and a normal cursor on disabled buttons, since the
+    Stop and Send buttons start out disabled. I kept the Convert button's larger
+    top margin and the right-aligned character counter (now a .counter class)
+    as text-to-speech-only styles, so they don't affect the other section.
+
+  Test results (local server on port 5001)
+  - GET / showed both sections with their voice and language dropdowns filled
+    in.
+  - POST /api/tts with "Hello, this is a merge test." and the Ava voice returned
+    200 and a valid WAV file (108 KB).
+  - POST /api/stt with samples/test_en.wav in en-US returned 200 and {"text": 
+    "Hello this is a speech-to-text test."}.
+
+  I checked that the JavaScript parses but didn't click through the page in a
+  browser, so the microphone recording path hasn't been run.
+
+  How to run it
+  cd Week-5-Task-1
+  ../.venv/bin/python app.py      # or: source ../.venv/bin/activate && python 
+  app.py
+  Then open http://127.0.0.1:5001. Your SPEECH_KEY and SPEECH_REGION are read
+  from the .env in the repo root. On a fresh setup, run pip install -r 
+  requirements.txt first.
+
+  When you're ready to finish the merge:
+  git add Week-5-Task-1/app.py Week-5-Task-1/templates/index.html
+  Week-5-Task-1/static/script.js Week-5-Task-1/static/style.css
+  git commit
+
+✻ Churned for 1m 53s · done 2:36 PM
+
+※ recap: I merged the text-to-speech and speech-to-text branches into one Flask site with no conflict markers left, and both /api/tts and /api/stt passed their tests. Next, you run git add on the four merged files and then git commit. (disable recaps in /config)

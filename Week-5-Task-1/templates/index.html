@@ -15,7 +15,7 @@
 
       <label for="tts-text">Text</label>
       <textarea id="tts-text" rows="6" maxlength="1000" placeholder="Type something…"></textarea>
-      <div class="hint"><span id="tts-count">0</span> / 1000</div>
+      <div class="hint counter"><span id="tts-count">0</span> / 1000</div>
 
       <label for="tts-voice">Voice</label>
       <select id="tts-voice">
@@ -31,6 +31,38 @@
       <div id="tts-result" hidden>
         <audio id="tts-audio" controls></audio>
         <a id="tts-download" download="speech.wav">Download</a>
+      </div>
+    </section>
+
+    <section id="stt">
+      <h2>Speech to Text</h2>
+
+      <label for="stt-language">Language</label>
+      <select id="stt-language">
+        {% for code, name in languages.items() %}
+        <option value="{{ code }}">{{ name }} ({{ code }})</option>
+        {% endfor %}
+      </select>
+
+      <label for="stt-file">Upload an audio file</label>
+      <input type="file" id="stt-file" accept=".wav,.mp3,.m4a,.webm,audio/*">
+      <button id="stt-upload">Transcribe file</button>
+
+      <label>…or record from your microphone</label>
+      <div class="row">
+        <button id="stt-start">Start</button>
+        <button id="stt-stop" disabled>Stop</button>
+        <button id="stt-send" disabled>Send recording</button>
+        <span id="stt-status" class="hint"></span>
+      </div>
+      <audio id="stt-preview" controls hidden></audio>
+
+      <div id="stt-error" class="error" hidden></div>
+
+      <div id="stt-result" hidden>
+        <label for="stt-text">Transcript</label>
+        <textarea id="stt-text" rows="6" readonly></textarea>
+        <button id="stt-copy">Copy</button>
       </div>
     </section>
   </main>
