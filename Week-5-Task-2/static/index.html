@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <div class="row">
+            <button class="mic" id="mic" title="Click to speak, click again to stop" aria-label="Voice input">
+                <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/>
+                    <path d="M6 11a6 6 0 0 0 12 0M12 17v4M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+
+            <div class="calculator">
+                <div class="display" id="display">0</div>
+
+                <!-- data-word is what each button says out loud -->
+                <div class="keys">
+                    <button class="digit" data-word="seven">7</button>
+                    <button class="digit" data-word="eight">8</button>
+                    <button class="digit" data-word="nine">9</button>
+                    <button class="operator" data-op="divide" data-word="over">÷</button>
+
+                    <button class="digit" data-word="four">4</button>
+                    <button class="digit" data-word="five">5</button>
+                    <button class="digit" data-word="six">6</button>
+                    <button class="operator" data-op="multiply" data-word="times">×</button>
+
+                    <button class="digit" data-word="one">1</button>
+                    <button class="digit" data-word="two">2</button>
+                    <button class="digit" data-word="three">3</button>
+                    <button class="operator" data-op="subtract" data-word="minus">−</button>
+
+                    <button class="digit" data-word="zero">0</button>
+                    <button class="digit" data-word="point">.</button>
+                    <button class="equals" id="equals" data-word="is">=</button>
+                    <button class="operator" data-op="add" data-word="plus">+</button>
+                </div>
+            </div>
+        </div>
+
+        <p class="voice-status" id="voice-status">Click the microphone and say e.g. "five plus two is".</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

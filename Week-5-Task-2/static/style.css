@@ -1,0 +1,123 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.calculator {
+    width: 230px;
+    padding: 8px;
+    background: #3ec3e3;
+}
+
+.display {
+    min-height: 60px;
+    margin-bottom: 10px;
+    padding: 8px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: #eef6f6;
+    color: #000;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: right;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.keys button {
+    height: 40px;
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.keys button:active {
+    filter: brightness(0.85);
+}
+
+.digit {
+    background: #888888;
+}
+
+.operator {
+    background: #bdbdbd;
+}
+
+.equals {
+    background: #1340a8;
+}
+
+/* Buttons "pressed" by voice light up briefly */
+.keys button.pressed {
+    filter: brightness(0.85);
+    outline: 2px solid #1340a8;
+}
+
+/* ---------- Voice input ---------- */
+.app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mic {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    background: #1340a8;
+    cursor: pointer;
+}
+
+.mic:disabled {
+    background: #8a9cc8;
+    cursor: wait;
+}
+
+.mic.recording {
+    background: #d13438;
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    50% { box-shadow: 0 0 0 10px rgba(209, 52, 56, 0.2); }
+}
+
+.voice-status {
+    max-width: 310px;
+    min-height: 2.6em;
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    text-align: center;
+}
