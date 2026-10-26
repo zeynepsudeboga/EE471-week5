@@ -1,0 +1,1370 @@
+▗ ▗   ▖ ▖  Claude Code v2.1.310
+           Opus 5.5 · Claude Pro
+ ▘▘   ▝▝   ~/EE471-week5
+
+
+❯ We are in the middle of a git merge on main: the text-to-speech version       
+  (HEAD) and the speech-to-text branch both created the same 4 files in         
+  Week-5-Task-1, so app.py, templates/index.html, static/script.js and          
+  static/style.css have add/add conflicts.                                      
+                                                                                
+  Resolve the conflicts by combining both features into ONE website:            
+  - One Flask app (one app = Flask(...), one .env loading, port 5001) with both 
+  /api/tts and /api/stt and all their error handling unchanged.                 
+  - One page with two clearly separated sections (or tabs): "Text to Speech"    
+  and "Speech to Text", each with its own controls and its own error area.      
+  - One script.js and one style.css that support both sections without          
+  duplicated helper code.                                                       
+  - Remove every conflict marker. Keep requirements.txt.                        
+  - Do NOT run git add or git commit; I will do that myself.                    
+                                                                                
+  Then test both /api/tts and /api/stt once and tell me how to run it.          
+
+  Listed 2 directories, ran 1 shell command (ctrl+o to expand)
+
+⏺ Both sides are clean and only overlap on shared scaffolding, so I'll write the
+  merged versions directly.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Now the merged app.py:
+
+⏺ Bash(python3 - <<'EOF'
+      import re…)
+  ⎿  import os
+     import subprocess
+     import tempfile
+     … +77 lines (ctrl+o to expand)
+  ⎿  Updated Week-5-Task-1/app.py (+6 -18)
+       1  import os
+       2 -<<<<<<< HEAD                                                   
+       3 -from pathlib import Path                                       
+       4 -                                                               
+       5 -import azure.cognitiveservices.speech as speechsdk             
+       6 -from dotenv import load_dotenv                                 
+       7 -from flask import Flask, Response, jsonify, render_template, re
+         -quest                                                          
+       8 -=======                                                        
+       2  import subprocess
+       3  import tempfile
+       4  import threading
+     ...
+       7  import azure.cognitiveservices.speech as speechsdk
+       8  import imageio_ffmpeg
+       9  from dotenv import load_dotenv
+      17 -from flask import Flask, jsonify, render_template, request     
+      18 ->>>>>>> speech-to-text                                         
+      10 +from flask import Flask, Response, jsonify, render_template, re
+         +quest                                                          
+      11  
+      12  # The .env file lives in the repo root, one level above this fo
+          lder.
+      13  load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+     ...
+      15  SPEECH_KEY = os.getenv("SPEECH_KEY")
+      16  SPEECH_REGION = os.getenv("SPEECH_REGION")
+      17  
+      26 -<<<<<<< HEAD                                                   
+      18 +# ---------- Text to Speech settings ----------                
+      19  MAX_TEXT_LENGTH = 1000
+      20  
+      21  VOICES = {
+     ...
+      25      "en-US-AndrewMultilingualNeural": "English (US) – Andrew (m
+          ultilingual)",
+      26  }
+      27  
+      36 -app = Flask(__name__)                                          
+      37 -=======                                                        
+      28 +# ---------- Speech to Text settings ----------                
+      29  LANGUAGES = {
+      30      "tr-TR": "Turkish",
+      31      "en-US": "English (US)",
+     ...
+      35  
+      36  app = Flask(__name__)
+      37  app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 25 MB up
+          load limit
+     … 32 more lines (ctrl+o to expand)
+
+⏺ Verify the route bodies are byte-identical to each side:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Only the intended lines changed. Now the page, script, and stylesheet.
+
+⏺ Write(Week-5-Task-1/templates/index.html)
+  ⎿  Added 4 lines, removed 4 lines
+      10    <main>
+      11      <h1>Azure Speech Demo</h1>
+      12  
+      13 -<<<<<<< HEAD                                                   
+      13      <section id="tts">
+      14        <h2>Text to Speech</h2>
+      15  
+      16        <label for="tts-text">Text</label>
+      17        <textarea id="tts-text" rows="6" maxlength="1000" placeho
+          lder="Type something…"></textarea>
+      19 -      <div class="hint"><span id="tts-count">0</span> / 1000</d
+         -iv>                                                            
+      18 +      <div class="hint counter"><span id="tts-count">0</span> /
+         + 1000</div>                                                    
+      19  
+      20        <label for="tts-voice">Voice</label>
+      21        <select id="tts-voice">
+     ...
+      31        <div id="tts-result" hidden>
+      32          <audio id="tts-audio" controls></audio>
+      33          <a id="tts-download" download="speech.wav">Download</a>
+      35 -=======                                                        
+      34 +      </div>                                                   
+      35 +    </section>                                                 
+      36 +                                                               
+      37      <section id="stt">
+      38        <h2>Speech to Text</h2>
+      39  
+     ...
+      63          <label for="stt-text">Transcript</label>
+      64          <textarea id="stt-text" rows="6" readonly></textarea>
+      65          <button id="stt-copy">Copy</button>
+      65 ->>>>>>> speech-to-text                                         
+      66        </div>
+      67      </section>
+      68    </main>
+
+⏺ Write(Week-5-Task-1/static/script.js)
+  ⎿  Added 39 lines, removed 26 lines
+       1 -<<<<<<< HEAD                                                   
+       1 +// ---------- Shared helpers ----------                        
+       2 +function showError(errorEl, message) {                         
+       3 +  errorEl.textContent = message;                               
+       4 +  errorEl.hidden = false;                                      
+       5 +}                                                              
+       6 +                                                               
+       7 +function hideError(errorEl) {                                  
+       8 +  errorEl.hidden = true;                                       
+       9 +}                                                              
+      10 +                                                               
+      11 +// Throws with the server's JSON error message (or the status c
+         +ode) if the response failed.                                   
+      12 +async function ensureOk(response) {                            
+      13 +  if (response.ok) return;                                     
+      14 +  const data = await response.json().catch(() => ({}));        
+      15 +  throw new Error(data.error || `Request failed (${response.sta
+         +tus})`);                                                       
+      16 +}                                                              
+      17 +                                                               
+      18  // ---------- Text to Speech ----------
+      19  const ttsText = document.getElementById("tts-text");
+      20  const ttsCount = document.getElementById("tts-count");
+     ...
+      32  });
+      33  
+      34  ttsButton.addEventListener("click", async () => {
+      19 -  ttsError.hidden = true;                                      
+      35 +  hideError(ttsError);                                         
+      36    ttsButton.disabled = true;
+      37    ttsButton.textContent = "Converting…";
+      38  
+     ...
+      42        headers: { "Content-Type": "application/json" },
+      43        body: JSON.stringify({ text: ttsText.value, voice: ttsVoi
+          ce.value }),
+      44      });
+      45 +    await ensureOk(response);                                  
+      46  
+      30 -    if (!response.ok) {                                        
+      31 -      const data = await response.json().catch(() => ({}));    
+      32 -      throw new Error(data.error || `Request failed (${response
+         -.status})`);                                                   
+      33 -    }                                                          
+      34 -                                                               
+      47      // Free the previous audio blob before creating a new one.
+      48      if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
+      49      ttsAudioUrl = URL.createObjectURL(await response.blob());
+     ...
+      53      ttsResult.hidden = false;
+      54      ttsAudio.play();
+      55    } catch (err) {
+      44 -    ttsError.textContent = err.message;                        
+      45 -    ttsError.hidden = false;                                   
+      56 +    showError(ttsError, err.message);                          
+      57    } finally {
+      58      ttsButton.disabled = false;
+      59      ttsButton.textContent = "Convert";
+      60    }
+      50 -=======                                                        
+      61 +});                                                            
+      62 +                                                               
+      63 +// ---------- Speech to Text ----------                        
+      64  const sttLanguage = document.getElementById("stt-language");
+      65  const sttFile = document.getElementById("stt-file");
+      66  const sttUpload = document.getElementById("stt-upload");
+     ...
+      77  let mediaRecorder = null;
+      78  let recordedBlob = null;
+      79  
+      67 -function showError(message) {                                  
+      68 -  sttError.textContent = message;                              
+      69 -  sttError.hidden = false;                                     
+      70 -}                                                              
+      71 -                                                               
+      80  // Sends a file/blob to the server and shows the transcript or 
+          the error.
+      81  async function transcribe(blob, filename, button) {
+      74 -  sttError.hidden = true;                                      
+      82 +  hideError(sttError);                                         
+      83    sttResult.hidden = true;
+      84    button.disabled = true;
+      85    sttStatus.textContent = "Transcribing…";
+     ...
+       88    form.append("audio", blob, filename);
+       89    form.append("language", sttLanguage.value);
+       90  
+       91 +  let response;                                               
+       92    try {
+       84 -    const response = await fetch("/api/stt", { method: "POST",
+          - body: form });                                               
+       93 +    response = await fetch("/api/stt", { method: "POST", body:
+          + form });                                                     
+       94 +  } catch (err) {                                             
+       95 +    showError(sttError, "Could not reach the server: " + err.m
+          +essage);                                                      
+       96 +    button.disabled = false;                                  
+       97 +    sttStatus.textContent = "";                               
+       98 +    return;                                                   
+       99 +  }                                                           
+      100 +                                                              
+      101 +  try {                                                       
+      102 +    await ensureOk(response);                                 
+      103      const data = await response.json();
+       86 -    if (!response.ok) {                                       
+       87 -      showError(data.error || `Request failed (${response.stat
+          -us})`);                                                       
+       88 -      return;                                                 
+       89 -    }                                                         
+      104      sttText.value = data.text;
+      105      sttResult.hidden = false;
+      106    } catch (err) {
+       93 -    showError("Could not reach the server: " + err.message);  
+      107 +    showError(sttError, err.message);                         
+      108    } finally {
+      109      button.disabled = false;
+      110      sttStatus.textContent = "";
+     ...
+      114  sttUpload.addEventListener("click", () => {
+      115    const file = sttFile.files[0];
+      116    if (!file) {
+      103 -    showError("Please choose an audio file first.");          
+      117 +    showError(sttError, "Please choose an audio file first.");
+      118      return;
+      119    }
+      120    transcribe(file, file.name, sttUpload);
+      121  });
+      122  
+      123  sttStart.addEventListener("click", async () => {
+      110 -  sttError.hidden = true;                                     
+      124 +  hideError(sttError);                                        
+      125    let stream;
+      126    try {
+      127      stream = await navigator.mediaDevices.getUserMedia({ audio
+           : true });
+      128    } catch (err) {
+      115 -    showError("Microphone access was denied or is unavailable.
+          -");                                                           
+      129 +    showError(sttError, "Microphone access was denied or is un
+          +available.");                                                 
+      130      return;
+      131    }
+      132  
+     ...
+      165    await navigator.clipboard.writeText(sttText.value);
+      166    sttCopy.textContent = "Copied!";
+      167    setTimeout(() => (sttCopy.textContent = "Copy"), 1500);
+      154 ->>>>>>> speech-to-text                                        
+      168  });
+
+⏺ Write(Week-5-Task-1/static/style.css)
+  ⎿  Added 21 lines, removed 31 lines
+      25  
+      26  label {
+      27    display: block;
+      28 -<<<<<<< HEAD                                                   
+      29 -  margin: 12px 0 4px;                                          
+      30 -=======                                                        
+      28    margin: 16px 0 4px;
+      32 ->>>>>>> speech-to-text                                         
+      29    font-weight: 600;
+      30  }
+      31  
+     ...
+      39    border-radius: 4px;
+      40  }
+      41  
+      46 -<<<<<<< HEAD                                                   
+      47 -.hint {                                                        
+      48 -  text-align: right;                                           
+      49 -=======                                                        
+      42  input[type="file"] {
+      43    display: block;
+      44    margin-bottom: 4px;
+      45  }
+      46  
+      47  .hint {
+      56 ->>>>>>> speech-to-text                                         
+      48    font-size: 0.85em;
+      49    color: #777;
+      50  }
+      51  
+      52 +.counter {                                                     
+      53 +  text-align: right;                                           
+      54 +}                                                              
+      55 +                                                               
+      56  button {
+      62 -<<<<<<< HEAD                                                   
+      63 -  margin-top: 16px;                                            
+      64 -=======                                                        
+      57    margin-top: 8px;
+      66 ->>>>>>> speech-to-text                                         
+      58    padding: 10px 20px;
+      59    font: inherit;
+      60    color: #fff;
+     ...
+      66  
+      67  button:disabled {
+      68    background: #8ab8e0;
+      78 -<<<<<<< HEAD                                                   
+      79 -  cursor: wait;                                                
+      80 -=======                                                        
+      69    cursor: default;
+      70  }
+      71  
+     ...
+       76    gap: 8px;
+       77  }
+       78  
+       91 -#stt-preview {                                                
+       92 -  display: block;                                             
+       93 -  width: 100%;                                                
+       94 -  margin-top: 12px;                                           
+       95 -}                                                             
+       96 -                                                              
+       97 -#stt-preview[hidden] {                                        
+       98 -  display: none;                                              
+       99 ->>>>>>> speech-to-text                                        
+      100 -}                                                             
+      101 -                                                              
+       79  .error {
+       80    margin-top: 16px;
+       81    padding: 10px 12px;
+     ...
+       84    border: 1px solid #f1bbbc;
+       85    border-radius: 4px;
+       86  }
+      110 -<<<<<<< HEAD                                                  
+       87  
+       88 +/* ---------- Text to Speech ---------- */                    
+       89 +#tts-convert {                                                
+       90 +  margin-top: 16px;                                           
+       91 +}                                                             
+       92 +                                                              
+       93  #tts-result {
+       94    margin-top: 16px;
+       95    display: flex;
+     ...
+      101    display: none;
+      102  }
+      103  
+      123 -audio {                                                       
+      104 +#tts-result audio {                                           
+      105    flex: 1;
+      106  }
+      126 -=======                                                       
+      127 ->>>>>>> speech-to-text                                        
+      107 +                                                              
+      108 +/* ---------- Speech to Text ---------- */                    
+      109 +#stt-preview {                                                
+      110 +  display: block;                                             
+      111 +  width: 100%;                                                
+      112 +  margin-top: 12px;                                           
+      113 +}                                                             
+      114 +                                                              
+      115 +#stt-preview[hidden] {                                        
+      116 +  display: none;                                              
+      117 +}                                                             
+
+⏺ Let me tidy the STT fetch so cleanup lives in one finally:
+
+⏺ Update(Week-5-Task-1/static/script.js)
+  ⎿  Added 3 lines, removed 10 lines
+       88    form.append("audio", blob, filename);
+       89    form.append("language", sttLanguage.value);
+       90  
+       91 -  let response;                                               
+       91    try {
+       93 -    response = await fetch("/api/stt", { method: "POST", body:
+          - form });                                                     
+       94 -  } catch (err) {                                             
+       95 -    showError(sttError, "Could not reach the server: " + err.m
+          -essage);                                                      
+       96 -    button.disabled = false;                                  
+       97 -    sttStatus.textContent = "";                               
+       98 -    return;                                                   
+       99 -  }                                                           
+      100 -                                                              
+      101 -  try {                                                       
+       92 +    const response = await fetch("/api/stt", { method: "POST",
+          + body: form }).catch((err) => {                               
+       93 +      throw new Error("Could not reach the server: " + err.mes
+          +sage);                                                        
+       94 +    });                                                       
+       95      await ensureOk(response);
+       96      const data = await response.json();
+       97      sttText.value = data.text;
+
+⏺ Now start the server and test both endpoints.
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ Both work. Stopping the test server:
+
+⏺ Stop Task
+  ⎿  cd /Users/zeynepsudeboga/EE471-week5/Week-5-Task-1 &&
+     ../.venv/bin/python app.py · stopped
+
+⏺ I merged the text-to-speech and speech-to-text branches into one website, and
+  both endpoints worked when I tested them. All conflict markers are gone and
+  requirements.txt is unchanged. I didn't run git add or git commit.
+
+  What changed
+  - app.py: one Flask app on port 5001 that loads .env once and has both
+    /api/tts and /api/stt. I compared it line by line against each branch, and
+    the route code and error handling are unchanged. The only edits are the
+    merged imports and index() now passing both voices and languages to the
+    page.
+  - templates/index.html: one page with two separate sections, "Text to Speech"
+    and "Speech to Text". Each has its own controls and its own error box.
+  - static/script.js: one file. The error-display code is now shared helpers
+    (showError, hideError and ensureOk) used by both sections, so it isn't
+    written twice. The error messages are the same as before.
+  - static/style.css: one file. Where the branches set different values I picked
+    one: 16px label spacing and a normal cursor on disabled buttons, since the
+    Stop and Send buttons start out disabled. I kept the Convert button's larger
+    top margin and the right-aligned character counter (now a .counter class)
+    as text-to-speech-only styles, so they don't affect the other section.
+
+  Test results (local server on port 5001)
+  - GET / showed both sections with their voice and language dropdowns filled
+    in.
+  - POST /api/tts with "Hello, this is a merge test." and the Ava voice returned
+    200 and a valid WAV file (108 KB).
+  - POST /api/stt with samples/test_en.wav in en-US returned 200 and {"text": 
+    "Hello this is a speech-to-text test."}.
+
+  I checked that the JavaScript parses but didn't click through the page in a
+  browser, so the microphone recording path hasn't been run.
+
+  How to run it
+  cd Week-5-Task-1
+  ../.venv/bin/python app.py      # or: source ../.venv/bin/activate && python 
+  app.py
+  Then open http://127.0.0.1:5001. Your SPEECH_KEY and SPEECH_REGION are read
+  from the .env in the repo root. On a fresh setup, run pip install -r 
+  requirements.txt first.
+
+  When you're ready to finish the merge:
+  git add Week-5-Task-1/app.py Week-5-Task-1/templates/index.html
+  Week-5-Task-1/static/script.js Week-5-Task-1/static/style.css
+  git commit
+
+✻ Churned for 1m 53s · done 2:36 PM
+
+※ recap: I merged the text-to-speech and speech-to-text branches into one Flask site with no conflict markers left, and both /api/tts and /api/stt passed their tests. Next, you run git add on the four merged files and then git commit. (disable recaps in /config)
+
+❯ /export                                                                       
+  ⎿  Conversation exported to: /Users/zeynepsudeboga/EE471-week5/2026-10-26-1440
+     03-pastedcontent-idbe75.txt
+
+※ recap: The goal was to merge the text-to-speech and speech-to-text branches into one Flask site, and that's done: no conflict markers left, and both /api/tts and /api/stt passed. Next, you run git add on the four merged files and commit. (disable recaps in /config)
+
+❯ Now Part 4. We are on a new branch "extended-features". Add three new         
+  sections (tabs) to the existing website in Week-5-Task-1, keeping Text to     
+  Speech and Speech to Text working and unchanged. Reuse the existing audio     
+  upload / browser microphone recording code and the ffmpeg-to-WAV conversion   
+  helper instead of duplicating them.                                           
+                                                                                
+  1. Real-time diarization: POST /api/diarize (audio + language). Use           
+  ConversationTranscriber with the transcribed event, collect each final result 
+  as {"speaker": speaker_id, "text": ...}, wait until session_stopped or        
+  canceled. Show the result as a conversation, one line per segment, each       
+  speaker in a different color (Guest-1, Guest-2...).                           
+  2. Speech translation: POST /api/translate (audio + source language + one or  
+  more target languages from checkboxes: en, tr, de, fr, it, es). Use           
+  TranslationRecognizer with continuous recognition and return the original     
+  text and a dictionary of translations. For each translation, add a "Speak"    
+  button that reuses the existing /api/tts with a voice that matches that       
+  language.                                                                     
+  3. Pronunciation assessment: the user types a reference text and records or   
+  uploads audio (language en-US, and tr-TR if the service supports it). POST    
+  /api/pronunciation. Use PronunciationAssessmentConfig (HundredMark, phoneme   
+  granularity, miscue enabled) and return accuracy, fluency, completeness and   
+  overall pronunciation scores, plus each word with its accuracy score and      
+  error type. Show the scores and color each word (green good, orange medium,   
+  red poor or omitted).                                                         
+                                                                                
+  Errors as JSON like the existing endpoints (400 bad input, 422 nothing        
+  recognized, 502 Azure canceled), shown in each section's error area. Update   
+  requirements.txt if needed. Do not run git add or commit.                     
+                                                                                
+  Then test each endpoint: samples/katiesteve.wav (en-US) for diarization,      
+  samples/test_en.wav for translation, and samples/test_en.wav with the         
+  reference text "Hello, this is a speech to text test." for pronunciation.     
+  Tell me the results.                                                          
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ I'll read the current files on this branch before refactoring.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Writing the backend now, built around shared pieces for upload
+  validation/conversion, continuous recognition, and cancel-message formatting,
+  with STT refactored onto them while keeping the same messages and status
+  codes.
+
+⏺ Bash(cd /Users/zeynepsudeboga/EE471-week5/Week-5-Task-1 && python3 - <<'EOF'
+      src = open("app.py").read()…)
+  ⎿  48:TTS_VOICES = set(VOICES) | {voice for _, voice in TRANSLATION_TARGE
+     TS.values()}
+     62:    return render_template(
+     … +2 lines (ctrl+o to expand)
+  ⎿  1 file changed (binary, mode only or too large to show)
+⏺ Before deciding on tr-TR for pronunciation, I'll check whether the service
+  actually supports it:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ tr-TR works with the service in your region, so I'll enable it.
+
+⏺ Update(Week-5-Task-1/app.py)
+  ⎿  Added 1 line
+      50  # ---------- Pronunciation assessment settings ----------
+      51  PRONUNCIATION_LANGUAGES = {
+      52      "en-US": "English (US)",
+      53 +    "tr-TR": "Turkish",                                        
+      54  }
+      55  MAX_REFERENCE_LENGTH = 500
+      56  
+
+⏺ Now the page. I'll use a Jinja macro for the upload + record controls so every
+  audio section shares the same markup, and a tab bar over the five sections.
+
+⏺ Write(Week-5-Task-1/templates/index.html)
+  ⎿  Added 96 lines, removed 22 lines
+       1 +{# Upload + microphone controls shared by every section that se
+         +nds audio. IDs are prefixed per section. #}                    
+       2 +{% macro audio_input(prefix, upload_label) %}                  
+       3 +      <label for="{{ prefix }}-file">Upload an audio file</labe
+         +l>                                                             
+       4 +      <input type="file" id="{{ prefix }}-file" accept=".wav,.m
+         +p3,.m4a,.webm,audio/*">                                        
+       5 +      <button id="{{ prefix }}-upload">{{ upload_label }}</butt
+         +on>                                                            
+       6 +                                                               
+       7 +      <label>…or record from your microphone</label>           
+       8 +      <div class="row">                                        
+       9 +        <button id="{{ prefix }}-start">Start</button>         
+      10 +        <button id="{{ prefix }}-stop" disabled>Stop</button>  
+      11 +        <button id="{{ prefix }}-send" disabled>Send recording<
+         +/button>                                                       
+      12 +        <span id="{{ prefix }}-status" class="hint"></span>    
+      13 +      </div>                                                   
+      14 +      <audio id="{{ prefix }}-preview" class="preview" controls
+         + hidden></audio>                                               
+      15 +                                                               
+      16 +      <div id="{{ prefix }}-error" class="error" hidden></div> 
+      17 +{% endmacro %}                                                 
+      18 +                                                               
+      19 +{% macro language_select(id, options) %}                       
+      20 +      <select id="{{ id }}">                                   
+      21 +        {% for code, name in options.items() %}                
+      22 +        <option value="{{ code }}">{{ name }} ({{ code }})</opt
+         +ion>                                                           
+      23 +        {% endfor %}                                           
+      24 +      </select>                                                
+      25 +{% endmacro %}                                                 
+      26  <!DOCTYPE html>
+      27  <html lang="en">
+      28  <head>
+     ...
+      35    <main>
+      36      <h1>Azure Speech Demo</h1>
+      37  
+      13 -    <section id="tts">                                         
+      38 +    <nav class="tabs" role="tablist">                          
+      39 +      <button class="tab" role="tab" data-tab="tts">Text to Spe
+         +ech</button>                                                   
+      40 +      <button class="tab" role="tab" data-tab="stt">Speech to T
+         +ext</button>                                                   
+      41 +      <button class="tab" role="tab" data-tab="diarize">Diariza
+         +tion</button>                                                  
+      42 +      <button class="tab" role="tab" data-tab="translate">Trans
+         +lation</button>                                                
+      43 +      <button class="tab" role="tab" data-tab="pron">Pronunciat
+         +ion</button>                                                   
+      44 +    </nav>                                                     
+      45 +                                                               
+      46 +    <section id="tts" class="panel">                           
+      47        <h2>Text to Speech</h2>
+      48  
+      49        <label for="tts-text">Text</label>
+     ...
+       67        </div>
+       68      </section>
+       69  
+       37 -    <section id="stt">                                        
+       70 +    <section id="stt" class="panel">                          
+       71        <h2>Speech to Text</h2>
+       72  
+       73        <label for="stt-language">Language</label>
+       41 -      <select id="stt-language">                              
+       42 -        {% for code, name in languages.items() %}             
+       43 -        <option value="{{ code }}">{{ name }} ({{ code }})</op
+          -tion>                                                         
+       44 -        {% endfor %}                                          
+       45 -      </select>                                               
+       74 +{{ language_select("stt-language", languages) }}              
+       75 +{{ audio_input("stt", "Transcribe file") }}                   
+       76 +      <div id="stt-result" hidden>                            
+       77 +        <label for="stt-text">Transcript</label>              
+       78 +        <textarea id="stt-text" rows="6" readonly></textarea> 
+       79 +        <button id="stt-copy">Copy</button>                   
+       80 +      </div>                                                  
+       81 +    </section>                                                
+       82  
+       47 -      <label for="stt-file">Upload an audio file</label>      
+       48 -      <input type="file" id="stt-file" accept=".wav,.mp3,.m4a,
+          -.webm,audio/*">                                               
+       49 -      <button id="stt-upload">Transcribe file</button>        
+       83 +    <section id="diarize" class="panel">                      
+       84 +      <h2>Real-time Diarization</h2>                          
+       85 +      <p class="hint">Transcribes a conversation and labels wh
+          +o said what (Guest-1, Guest-2, …).</p>                        
+       86  
+       51 -      <label>…or record from your microphone</label>          
+       52 -      <div class="row">                                       
+       53 -        <button id="stt-start">Start</button>                 
+       54 -        <button id="stt-stop" disabled>Stop</button>          
+       55 -        <button id="stt-send" disabled>Send recording</button>
+       56 -        <span id="stt-status" class="hint"></span>            
+       87 +      <label for="diarize-language">Language</label>          
+       88 +{{ language_select("diarize-language", languages) }}          
+       89 +{{ audio_input("diarize", "Diarize file") }}                  
+       90 +      <div id="diarize-result" hidden>                        
+       91 +        <label>Conversation</label>                           
+       92 +        <div id="diarize-conversation" class="conversation"></
+          +div>                                                          
+       93        </div>
+       58 -      <audio id="stt-preview" controls hidden></audio>        
+       94 +    </section>                                                
+       95  
+       60 -      <div id="stt-error" class="error" hidden></div>         
+       96 +    <section id="translate" class="panel">                    
+       97 +      <h2>Speech Translation</h2>                             
+       98  
+       62 -      <div id="stt-result" hidden>                            
+       63 -        <label for="stt-text">Transcript</label>              
+       64 -        <textarea id="stt-text" rows="6" readonly></textarea> 
+       65 -        <button id="stt-copy">Copy</button>                   
+       99 +      <label for="translate-source">Spoken language</label>   
+      100 +{{ language_select("translate-source", languages) }}          
+      101 +                                                              
+      102 +      <label>Translate to</label>                             
+      103 +      <div class="row checkboxes" id="translate-targets">     
+      104 +        {% for code, (name, voice) in translation_targets.item
+          +s() %}                                                        
+      105 +        <label class="check"><input type="checkbox" value="{{ 
+          +code }}" data-name="{{ name }}"{% if code == "tr" %} checked{%
+          + endif %}> {{ name }}</label>                                 
+      106 +        {% endfor %}                                          
+      107        </div>
+      108 +{{ audio_input("translate", "Translate file") }}              
+      109 +      <div id="translate-result" hidden>                      
+      110 +        <label>Original</label>                               
+      111 +        <p id="translate-original" class="original"></p>      
+      112 +        <label>Translations</label>                           
+      113 +        <ul id="translate-list" class="translations"></ul>    
+      114 +      </div>                                                  
+      115      </section>
+      116 +                                                              
+      117 +    <section id="pron" class="panel">                         
+      118 +      <h2>Pronunciation Assessment</h2>                       
+      119 +                                                              
+      120 +      <label for="pron-language">Language</label>             
+      121 +{{ language_select("pron-language", pronunciation_languages) }
+          +}                                                             
+      122 +                                                              
+      123 +      <label for="pron-reference">Reference text (what you wil
+          +l read aloud)</label>                                         
+      124 +      <textarea id="pron-reference" rows="3" maxlength="500" p
+          +laceholder="Hello, this is a speech to text test."></textarea>
+      125 +{{ audio_input("pron", "Assess file") }}                      
+      126 +      <div id="pron-result" hidden>                           
+      127 +        <div class="scores">                                  
+      128 +          <div class="score"><span id="pron-pronunciation"></s
+          +pan>Overall</div>                                             
+      129 +          <div class="score"><span id="pron-accuracy"></span>A
+          +ccuracy</div>                                                 
+      130 +          <div class="score"><span id="pron-fluency"></span>Fl
+          +uency</div>                                                   
+      131 +          <div class="score"><span id="pron-completeness"></sp
+          +an>Completeness</div>                                         
+      132 +        </div>                                                
+      133 +        <label>Words</label>                                  
+      134 +        <p id="pron-words" class="words"></p>                 
+      135 +        <p class="hint legend">                               
+      136 +          <span class="word good">≥ 80 good</span>            
+      137 +          <span class="word medium">60–79 medium</span>       
+      138 +          <span class="word poor">&lt; 60 poor / omitted</span
+          +>                                                             
+      139 +        </p>                                                  
+      140 +      </div>                                                  
+      141 +    </section>                                                
+      142    </main>
+      143  
+      144    <script src="{{ url_for('static', filename='script.js') }}">
+           </script>
+
+⏺ Now the script: the STT upload and recording code becomes setupAudioInput(),
+  which all four audio sections use, and the TTS fetch becomes synthesize(),
+  which the Speak buttons also call.
+
+⏺ Write(Week-5-Task-1/static/script.js)
+  ⎿  Added 257 lines, removed 100 lines
+      1  // ---------- Shared helpers ----------
+      2 +const $ = (id) => document.getElementById(id);                  
+      3 +                                                                
+      4  function showError(errorEl, message) {
+      5    errorEl.textContent = message;
+      6    errorEl.hidden = false;
+     ...
+       17    throw new Error(data.error || `Request failed (${response.st
+           atus})`);
+       18  }
+       19  
+       20 +// Calls /api/tts and returns an object URL for the WAV audio.
+          + The caller revokes it.                                       
+       21 +async function synthesize(text, voice) {                      
+       22 +  const response = await fetch("/api/tts", {                  
+       23 +    method: "POST",                                           
+       24 +    headers: { "Content-Type": "application/json" },          
+       25 +    body: JSON.stringify({ text, voice }),                    
+       26 +  });                                                         
+       27 +  await ensureOk(response);                                   
+       28 +  return URL.createObjectURL(await response.blob());          
+       29 +}                                                             
+       30 +                                                              
+       31 +// Wires up the upload + microphone controls of one section (s
+          +ee the audio_input macro).                                    
+       32 +// The audio is posted to `url` together with `fields()` ([nam
+          +e, value] pairs), and the                                     
+       33 +// JSON reply is passed to `render`. Errors go to the section'
+          +s own error area.                                             
+       34 +function setupAudioInput({ prefix, url, busyText, fields, rend
+          +er }) {                                                       
+       35 +  const file = $(`${prefix}-file`);                           
+       36 +  const upload = $(`${prefix}-upload`);                       
+       37 +  const start = $(`${prefix}-start`);                         
+       38 +  const stop = $(`${prefix}-stop`);                           
+       39 +  const send = $(`${prefix}-send`);                           
+       40 +  const status = $(`${prefix}-status`);                       
+       41 +  const preview = $(`${prefix}-preview`);                     
+       42 +  const error = $(`${prefix}-error`);                         
+       43 +  const result = $(`${prefix}-result`);                       
+       44 +                                                              
+       45 +  let mediaRecorder = null;                                   
+       46 +  let recordedBlob = null;                                    
+       47 +                                                              
+       48 +  async function submit(blob, filename, button) {             
+       49 +    hideError(error);                                         
+       50 +    result.hidden = true;                                     
+       51 +    button.disabled = true;                                   
+       52 +    status.textContent = busyText;                            
+       53 +                                                              
+       54 +    const form = new FormData();                              
+       55 +    form.append("audio", blob, filename);                     
+       56 +    for (const [name, value] of fields()) form.append(name, va
+          +lue);                                                         
+       57 +                                                              
+       58 +    try {                                                     
+       59 +      const response = await fetch(url, { method: "POST", body
+          +: form }).catch((err) => {                                    
+       60 +        throw new Error("Could not reach the server: " + err.m
+          +essage);                                                      
+       61 +      });                                                     
+       62 +      await ensureOk(response);                               
+       63 +      render(await response.json());                          
+       64 +      result.hidden = false;                                  
+       65 +    } catch (err) {                                           
+       66 +      showError(error, err.message);                          
+       67 +    } finally {                                               
+       68 +      button.disabled = false;                                
+       69 +      status.textContent = "";                                
+       70 +    }                                                         
+       71 +  }                                                           
+       72 +                                                              
+       73 +  upload.addEventListener("click", () => {                    
+       74 +    const chosen = file.files[0];                             
+       75 +    if (!chosen) {                                            
+       76 +      showError(error, "Please choose an audio file first."); 
+       77 +      return;                                                 
+       78 +    }                                                         
+       79 +    submit(chosen, chosen.name, upload);                      
+       80 +  });                                                         
+       81 +                                                              
+       82 +  start.addEventListener("click", async () => {               
+       83 +    hideError(error);                                         
+       84 +    let stream;                                               
+       85 +    try {                                                     
+       86 +      stream = await navigator.mediaDevices.getUserMedia({ aud
+          +io: true });                                                  
+       87 +    } catch (err) {                                           
+       88 +      showError(error, "Microphone access was denied or is una
+          +vailable.");                                                  
+       89 +      return;                                                 
+       90 +    }                                                         
+       91 +                                                              
+       92 +    const chunks = [];                                        
+       93 +    mediaRecorder = new MediaRecorder(stream);                
+       94 +    mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
+          +;                                                             
+       95 +    mediaRecorder.onstop = () => {                            
+       96 +      stream.getTracks().forEach((track) => track.stop()); // 
+          +turn off the mic indicator                                    
+       97 +      recordedBlob = new Blob(chunks, { type: mediaRecorder.mi
+          +meType });                                                    
+       98 +      if (preview.src) URL.revokeObjectURL(preview.src);      
+       99 +      preview.src = URL.createObjectURL(recordedBlob);        
+      100 +      preview.hidden = false;                                 
+      101 +      send.disabled = false;                                  
+      102 +      status.textContent = "Recording ready.";                
+      103 +    };                                                        
+      104 +                                                              
+      105 +    mediaRecorder.start();                                    
+      106 +    start.disabled = true;                                    
+      107 +    stop.disabled = false;                                    
+      108 +    send.disabled = true;                                     
+      109 +    status.textContent = "Recording…";                        
+      110 +  });                                                         
+      111 +                                                              
+      112 +  stop.addEventListener("click", () => {                      
+      113 +    mediaRecorder.stop();                                     
+      114 +    start.disabled = false;                                   
+      115 +    stop.disabled = true;                                     
+      116 +  });                                                         
+      117 +                                                              
+      118 +  send.addEventListener("click", () => {                      
+      119 +    // Chrome/Firefox record WebM; Safari records MP4 (same co
+          +ntainer as .m4a).                                             
+      120 +    const filename = recordedBlob.type.includes("mp4") ? "reco
+          +rding.m4a" : "recording.webm";                                
+      121 +    submit(recordedBlob, filename, send);                     
+      122 +  });                                                         
+      123 +}                                                             
+      124 +                                                              
+      125 +// ---------- Tabs ----------                                 
+      126 +const tabs = document.querySelectorAll(".tab");               
+      127 +                                                              
+      128 +function showTab(name) {                                      
+      129 +  tabs.forEach((tab) => {                                     
+      130 +    const active = tab.dataset.tab === name;                  
+      131 +    tab.classList.toggle("active", active);                   
+      132 +    tab.setAttribute("aria-selected", active);                
+      133 +    $(tab.dataset.tab).hidden = !active;                      
+      134 +  });                                                         
+      135 +}                                                             
+      136 +                                                              
+      137 +tabs.forEach((tab) => tab.addEventListener("click", () => {   
+      138 +  showTab(tab.dataset.tab);                                   
+      139 +  history.replaceState(null, "", "#" + tab.dataset.tab);      
+      140 +}));                                                          
+      141 +                                                              
+      142 +const initialTab = location.hash.slice(1);                    
+      143 +showTab([...tabs].some((tab) => tab.dataset.tab === initialTab
+          +) ? initialTab : "tts");                                      
+      144 +                                                              
+      145  // ---------- Text to Speech ----------
+       19 -const ttsText = document.getElementById("tts-text");          
+       20 -const ttsCount = document.getElementById("tts-count");        
+       21 -const ttsVoice = document.getElementById("tts-voice");        
+       22 -const ttsButton = document.getElementById("tts-convert");     
+       23 -const ttsError = document.getElementById("tts-error");        
+       24 -const ttsResult = document.getElementById("tts-result");      
+       25 -const ttsAudio = document.getElementById("tts-audio");        
+       26 -const ttsDownload = document.getElementById("tts-download");  
+      146 +const ttsText = $("tts-text");                                
+      147 +const ttsCount = $("tts-count");                              
+      148 +const ttsVoice = $("tts-voice");                              
+      149 +const ttsButton = $("tts-convert");                           
+      150 +const ttsError = $("tts-error");                              
+      151 +const ttsResult = $("tts-result");                            
+      152 +const ttsAudio = $("tts-audio");                              
+      153 +const ttsDownload = $("tts-download");                        
+      154  
+      155  let ttsAudioUrl = null;
+      156  
+     ...
+      164    ttsButton.textContent = "Converting…";
+      165  
+      166    try {
+       40 -    const response = await fetch("/api/tts", {                
+       41 -      method: "POST",                                         
+       42 -      headers: { "Content-Type": "application/json" },        
+       43 -      body: JSON.stringify({ text: ttsText.value, voice: ttsVo
+          -ice.value }),                                                 
+       44 -    });                                                       
+       45 -    await ensureOk(response);                                 
+      167 +    const audioUrl = await synthesize(ttsText.value, ttsVoice.
+          +value);                                                       
+      168  
+       47 -    // Free the previous audio blob before creating a new one.
+      169 +    // Free the previous audio blob before using the new one. 
+      170      if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
+       49 -    ttsAudioUrl = URL.createObjectURL(await response.blob()); 
+      171 +    ttsAudioUrl = audioUrl;                                   
+      172  
+      173      ttsAudio.src = ttsAudioUrl;
+      174      ttsDownload.href = ttsAudioUrl;
+     ...
+      183  });
+      184  
+      185  // ---------- Speech to Text ----------
+       64 -const sttLanguage = document.getElementById("stt-language");  
+       65 -const sttFile = document.getElementById("stt-file");          
+       66 -const sttUpload = document.getElementById("stt-upload");      
+       67 -const sttStart = document.getElementById("stt-start");        
+       68 -const sttStop = document.getElementById("stt-stop");          
+       69 -const sttSend = document.getElementById("stt-send");          
+       70 -const sttStatus = document.getElementById("stt-status");      
+       71 -const sttPreview = document.getElementById("stt-preview");    
+       72 -const sttError = document.getElementById("stt-error");        
+       73 -const sttResult = document.getElementById("stt-result");      
+       74 -const sttText = document.getElementById("stt-text");          
+       75 -const sttCopy = document.getElementById("stt-copy");          
+      186 +const sttText = $("stt-text");                                
+      187 +const sttCopy = $("stt-copy");                                
+      188  
+       77 -let mediaRecorder = null;                                     
+       78 -let recordedBlob = null;                                      
+      189 +setupAudioInput({                                             
+      190 +  prefix: "stt",                                              
+      191 +  url: "/api/stt",                                            
+      192 +  busyText: "Transcribing…",                                  
+      193 +  fields: () => [["language", $("stt-language").value]],      
+      194 +  render: (data) => {                                         
+      195 +    sttText.value = data.text;                                
+      196 +  },                                                          
+      197 +});                                                           
+      198  
+       80 -// Sends a file/blob to the server and shows the transcript or
+          - the error.                                                   
+       81 -async function transcribe(blob, filename, button) {           
+       82 -  hideError(sttError);                                        
+       83 -  sttResult.hidden = true;                                    
+       84 -  button.disabled = true;                                     
+       85 -  sttStatus.textContent = "Transcribing…";                    
+      199 +sttCopy.addEventListener("click", async () => {               
+      200 +  await navigator.clipboard.writeText(sttText.value);         
+      201 +  sttCopy.textContent = "Copied!";                            
+      202 +  setTimeout(() => (sttCopy.textContent = "Copy"), 1500);     
+      203 +});                                                           
+      204  
+       87 -  const form = new FormData();                                
+       88 -  form.append("audio", blob, filename);                       
+       89 -  form.append("language", sttLanguage.value);                 
+      205 +// ---------- Diarization ----------                          
+      206 +const SPEAKER_COLORS = 6; // matches .speaker-0 … .speaker-5 i
+          +n style.css                                                   
+      207  
+      208 +setupAudioInput({                                             
+      209 +  prefix: "diarize",                                          
+      210 +  url: "/api/diarize",                                        
+      211 +  busyText: "Transcribing conversation…",                     
+      212 +  fields: () => [["language", $("diarize-language").value]],  
+      213 +  render: (data) => {                                         
+      214 +    const conversation = $("diarize-conversation");           
+      215 +    conversation.replaceChildren();                           
+      216 +    const speakers = []; // order of first appearance decides 
+          +the color                                                     
+      217 +                                                              
+      218 +    for (const { speaker, text } of data.segments) {          
+      219 +      if (!speakers.includes(speaker)) speakers.push(speaker);
+      220 +      const colorClass = speaker === "Unknown"                
+      221 +        ? "speaker-unknown"                                   
+      222 +        : `speaker-${speakers.indexOf(speaker) % SPEAKER_COLOR
+          +S}`;                                                          
+      223 +                                                              
+      224 +      const line = document.createElement("div");             
+      225 +      line.className = `segment ${colorClass}`;               
+      226 +      const name = document.createElement("span");            
+      227 +      name.className = "speaker";                             
+      228 +      name.textContent = speaker;                             
+      229 +      line.append(name, document.createTextNode(text));       
+      230 +      conversation.append(line);                              
+      231 +    }                                                         
+      232 +  },                                                          
+      233 +});                                                           
+      234 +                                                              
+      235 +// ---------- Translation ----------                          
+      236 +const translateError = $("translate-error");                  
+      237 +const targetBoxes = document.querySelectorAll("#translate-targ
+          +ets input");                                                  
+      238 +let speakUrl = null;                                          
+      239 +                                                              
+      240 +setupAudioInput({                                             
+      241 +  prefix: "translate",                                        
+      242 +  url: "/api/translate",                                      
+      243 +  busyText: "Translating…",                                   
+      244 +  fields: () => [                                             
+      245 +    ["source", $("translate-source").value],                  
+      246 +    ...[...targetBoxes].filter((box) => box.checked).map((box)
+          + => ["targets", box.value]),                                  
+      247 +  ],                                                          
+      248 +  render: (data) => {                                         
+      249 +    $("translate-original").textContent = data.original;      
+      250 +    const list = $("translate-list");                         
+      251 +    list.replaceChildren();                                   
+      252 +                                                              
+      253 +    for (const [code, text] of Object.entries(data.translation
+          +s)) {                                                         
+      254 +      const item = document.createElement("li");              
+      255 +      const name = document.createElement("span");            
+      256 +      name.className = "lang";                                
+      257 +      name.textContent = document.querySelector(`#translate-ta
+          +rgets input[value="${code}"]`).dataset.name;                  
+      258 +      const body = document.createElement("span");            
+      259 +      body.className = "text";                                
+      260 +      body.textContent = text;                                
+      261 +      const speak = document.createElement("button");         
+      262 +      speak.textContent = "Speak";                            
+      263 +      speak.addEventListener("click", () => speakTranslation(t
+          +ext, data.voices[code], speak));                              
+      264 +      item.append(name, body, speak);                         
+      265 +      list.append(item);                                      
+      266 +    }                                                         
+      267 +  },                                                          
+      268 +});                                                           
+      269 +                                                              
+      270 +async function speakTranslation(text, voice, button) {        
+      271 +  hideError(translateError);                                  
+      272 +  button.disabled = true;                                     
+      273    try {
+       92 -    const response = await fetch("/api/stt", { method: "POST",
+          - body: form }).catch((err) => {                               
+       93 -      throw new Error("Could not reach the server: " + err.mes
+          -sage);                                                        
+       94 -    });                                                       
+       95 -    await ensureOk(response);                                 
+       96 -    const data = await response.json();                       
+       97 -    sttText.value = data.text;                                
+       98 -    sttResult.hidden = false;                                 
+      274 +    if (speakUrl) URL.revokeObjectURL(speakUrl);              
+      275 +    speakUrl = await synthesize(text, voice);                 
+      276 +    await new Audio(speakUrl).play();                         
+      277    } catch (err) {
+      100 -    showError(sttError, err.message);                         
+      278 +    showError(translateError, err.message);                   
+      279    } finally {
+      280      button.disabled = false;
+      103 -    sttStatus.textContent = "";                               
+      281    }
+      282  }
+      283  
+      107 -sttUpload.addEventListener("click", () => {                   
+      108 -  const file = sttFile.files[0];                              
+      109 -  if (!file) {                                                
+      110 -    showError(sttError, "Please choose an audio file first.");
+      111 -    return;                                                   
+      112 -  }                                                           
+      113 -  transcribe(file, file.name, sttUpload);                     
+      114 -});                                                           
+      284 +// ---------- Pronunciation assessment ----------             
+      285 +function scoreClass(word) {                                   
+      286 +  if (word.error_type === "Omission" || word.accuracy < 60) re
+          +turn "poor";                                                  
+      287 +  return word.accuracy < 80 ? "medium" : "good";              
+      288 +}                                                             
+      289  
+      116 -sttStart.addEventListener("click", async () => {              
+      117 -  hideError(sttError);                                        
+      118 -  let stream;                                                 
+      119 -  try {                                                       
+      120 -    stream = await navigator.mediaDevices.getUserMedia({ audio
+          -: true });                                                    
+      121 -  } catch (err) {                                             
+      122 -    showError(sttError, "Microphone access was denied or is un
+          -available.");                                                 
+      123 -    return;                                                   
+      124 -  }                                                           
+      290 +setupAudioInput({                                             
+      291 +  prefix: "pron",                                             
+      292 +  url: "/api/pronunciation",                                  
+      293 +  busyText: "Assessing…",                                     
+      294 +  fields: () => [                                             
+      295 +    ["language", $("pron-language").value],                   
+      296 +    ["reference_text", $("pron-reference").value],            
+      297 +  ],                                                          
+      298 +  render: (data) => {                                         
+      299 +    for (const key of ["pronunciation", "accuracy", "fluency",
+          + "completeness"]) {                                           
+      300 +      $(`pron-${key}`).textContent = Math.round(data[key]);   
+      301 +    }                                                         
+      302  
+      126 -  const chunks = [];                                          
+      127 -  mediaRecorder = new MediaRecorder(stream);                  
+      128 -  mediaRecorder.ondataavailable = (e) => chunks.push(e.data); 
+      129 -  mediaRecorder.onstop = () => {                              
+      130 -    stream.getTracks().forEach((track) => track.stop()); // tu
+          -rn off the mic indicator                                      
+      131 -    recordedBlob = new Blob(chunks, { type: mediaRecorder.mime
+          -Type });                                                      
+      132 -    sttPreview.src = URL.createObjectURL(recordedBlob);       
+      133 -    sttPreview.hidden = false;                                
+      134 -    sttSend.disabled = false;                                 
+      135 -    sttStatus.textContent = "Recording ready.";               
+      136 -  };                                                          
+      137 -                                                              
+      138 -  mediaRecorder.start();                                      
+      139 -  sttStart.disabled = true;                                   
+      140 -  sttStop.disabled = false;                                   
+      141 -  sttSend.disabled = true;                                    
+      142 -  sttStatus.textContent = "Recording…";                       
+      303 +    const words = $("pron-words");                            
+      304 +    words.replaceChildren();                                  
+      305 +    for (const word of data.words) {                          
+      306 +      const span = document.createElement("span");            
+      307 +      span.className = `word ${scoreClass(word)}`;            
+      308 +      span.textContent = word.word;                           
+      309 +      span.title = `Accuracy ${Math.round(word.accuracy)} · ${
+          +word.error_type}`;                                            
+      310 +      if (word.error_type !== "None") {                       
+      311 +        const tag = document.createElement("small");          
+      312 +        tag.textContent = word.error_type;                    
+      313 +        span.append(tag);                                     
+      314 +      }                                                       
+      315 +      words.append(span);                                     
+      316 +    }                                                         
+      317 +  },                                                          
+      318  });
+      144 -                                                              
+      145 -sttStop.addEventListener("click", () => {                     
+      146 -  mediaRecorder.stop();                                       
+      147 -  sttStart.disabled = false;                                  
+      148 -  sttStop.disabled = true;                                    
+      149 -});                                                           
+      150 -                                                              
+      151 -sttSend.addEventListener("click", () => {                     
+      152 -  // Chrome/Firefox record WebM; Safari records MP4 (same cont
+          -ainer as .m4a).                                               
+      153 -  const filename = recordedBlob.type.includes("mp4") ? "record
+          -ing.m4a" : "recording.webm";                                  
+      154 -  transcribe(recordedBlob, filename, sttSend);                
+      155 -});                                                           
+      156 -                                                              
+      157 -sttCopy.addEventListener("click", async () => {               
+      158 -  await navigator.clipboard.writeText(sttText.value);         
+      159 -  sttCopy.textContent = "Copied!";                            
+      160 -  setTimeout(() => (sttCopy.textContent = "Copy"), 1500);     
+      161 -});                                                           
+
+⏺ Now the styles. #stt-preview becomes the shared .preview class:
+
+⏺ Bash(python3 - <<'EOF'
+      p = "static/style.css"…)
+  ⎿  js-ok
+  ⎿  Updated Week-5-Task-1/static/style.css (+152 -3)
+      105    flex: 1;
+      106  }
+      107  
+      108 -/* ---------- Speech to Text ---------- */                    
+      109 -#stt-preview {                                                
+      108 +/* ---------- Shared audio input (upload + microphone) -------
+          +--- */                                                        
+      109 +.preview {                                                    
+      110    display: block;
+      111    width: 100%;
+      112    margin-top: 12px;
+      113  }
+      114  
+      115 -#stt-preview[hidden] {                                        
+      115 +.preview[hidden] {                                            
+      116    display: none;
+      117  }
+      118 +                                                              
+      119 +/* ---------- Tabs ---------- */                              
+      120 +.tabs {                                                       
+      121 +  display: flex;                                              
+      122 +  flex-wrap: wrap;                                            
+      123 +  gap: 4px;                                                   
+      124 +  margin-bottom: 16px;                                        
+      125 +}                                                             
+      126 +                                                              
+      127 +.tab {                                                        
+      128 +  margin-top: 0;                                              
+      129 +  padding: 8px 14px;                                          
+      130 +  color: #0078d4;                                             
+      131 +  background: #fff;                                           
+      132 +  border: 1px solid #c7dcf0;                                  
+      133 +}                                                             
+      134 +                                                              
+      135 +.tab.active {                                                 
+      136 +  color: #fff;                                                
+      137 +  background: #0078d4;                                        
+      138 +  border-color: #0078d4;                                      
+      139 +}                                                             
+      140 +                                                              
+      141 +/* ---------- Diarization ---------- */                       
+     … 125 more lines (ctrl+o to expand)
+
+⏺ That diff is just my edit. Starting the server to test:
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ Background command "Start the Flask server on port 5001" failed with exit code
+1
+
+⏺ The requests all returned, but the server task says it failed. I'll check what
+  actually answered on port 5001.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Another server was already listening on 5001, so my copy exited and the tests
+  went to that one. I'll check what it is:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ That's your own server, started at 14:38 and auto-reloaded at 14:45 with the
+  updated app.py, so the earlier tests ran against the new code. I'll leave it
+  running and check a few error paths next.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Silence on /api/pronunciation returns a 200 with all scores at 0 and text ".",
+  since Azure's miscue detection marks every reference word as omitted instead
+  of failing. I'll treat this "every word omitted" case as equivalent to no
+  speech recognized and return a 422.
+
+⏺ Update(Week-5-Task-1/app.py)
+  ⎿  Added 3 lines
+      381          return None, (jsonify(error="No speech could be recogn
+           ized in the audio."), 422)
+      382  
+      383      assessment = speechsdk.PronunciationAssessmentResult(resul
+           t)
+      384 +    # With miscue enabled, silence comes back as "." with ever
+          +y reference word omitted.                                     
+      385 +    if all(w.error_type == "Omission" for w in assessment.word
+          +s):                                                           
+      386 +        return None, (jsonify(error="No speech could be recogn
+          +ized in the audio."), 422)                                    
+      387      words = [
+      388          {"word": w.word, "accuracy": w.accuracy_score, "error_
+           type": w.error_type}
+      389          for w in assessment.words
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ I added the three new tabs: Diarization, Translation and Pronunciation. All
+  three endpoints worked with your test files, and Text to Speech and Speech to
+  Text still work. I tested the endpoints directly but didn't open the page in a
+  browser, so the tabs, word colors and Speak buttons haven't been clicked
+  through.
+
+  Test results
+
+  ┌────────────────────┬───────────────────────────────┬────────────────────┐
+  │      Endpoint      │             Input             │       Result       │
+  ├────────────────────┼───────────────────────────────┼────────────────────┤
+  │                    │                               │ 200, 7 lines, 2    │
+  │ /api/diarize       │ katiesteve.wav, en-US         │ speakers (see      │
+  │                    │                               │ below)             │
+  ├────────────────────┼───────────────────────────────┼────────────────────┤
+  │ /api/translate     │ test_en.wav, en-US → tr, de,  │ 200                │
+  │                    │ fr, it, es                    │                    │
+  ├────────────────────┼───────────────────────────────┼────────────────────┤
+  │ /api/pronunciation │ test_en.wav + "Hello, this is │ 200, overall 98.6  │
+  │                    │  a speech to text test."      │                    │
+  └────────────────────┴───────────────────────────────┴────────────────────┘
+
+  - Diarization: 7 lines. Two are labeled wrong: Azure gave "Good morning,
+    Katie." to Guest-1 instead of Guest-2. That's the service's own result, not
+    a code problem.
+    - Guest-1: "Good morning, Steve."
+    - Guest-1: "Good morning, Katie."
+    - Guest-1: "Have you tried the latest real-time diarization…"
+    - Guest-2: "Not yet. I've been using the batch transcription…"
+    - Guest-2: "Is the new feature can diarize in real time?"
+    - Guest-1: "Absolutely."
+    - Guest-2: "That's exciting. Let me try it right now."
+  - Translation: the original came back as "Hello this is a speech-to-text
+    test."
+    - tr: "Merhaba, bu bir konuşmadan metne dönüş testi."
+    - de: "Hallo, das ist ein Sprach-zu-Text-Test."
+    - fr: "Bonjour, ceci est un test de reconnaissance vocale."
+    - it: "Ciao, questo è un test di riconoscimento vocale."
+    - es: "Hola, esto es una prueba de reconocimiento de voz."
+  - Pronunciation: accuracy 98, fluency 99, completeness 100. All 8 words scored
+    94–100 with no errors.
+    - When I added "Goodbye." to the reference text, completeness dropped to 89
+      and "Goodbye" came back as an Omission, so the miscue setting works.
+  - Turkish pronunciation: Azure accepted tr-TR in your region (tested on
+    test_tr.wav, overall 94.6), so the language dropdown offers both en-US and
+    tr-TR.
+
+  Error checks: missing audio, no or unknown target language, and an empty
+  reference text return 400. Silence returns 422. TTS and STT still return the
+  same responses and errors as before.
+  - One fix I made: silence on /api/pronunciation originally came back as 200
+    with every score at 0, because Azure marks every reference word as omitted.
+    It now returns 422 "nothing recognized".
+  - Port 5001: your own server was already running there (started 14:38 in debug
+    mode). It reloaded the new code automatically, so all the tests ran against
+    it. I left it running.
+
+  Design decisions
+  - Shared audio code: the upload and microphone code from Speech to Text is now
+    one setupAudioInput() function in script.js, with matching shared HTML in
+    index.html. All four audio tabs use it. On the server, all four endpoints
+    share the upload checks, the ffmpeg-to-WAV conversion, the recognition loop
+    and the cancel-error formatting. The Speech to Text messages and status
+    codes are unchanged.
+  - Speak buttons: they call the existing /api/tts with a voice for each
+    language, for example de-DE-KatjaNeural for German. To allow that, /api/tts
+    now also accepts those six voices. The Text to Speech voice dropdown is
+    unchanged.
+  - Pronunciation length: it scores a single utterance (one recognition pass),
+    which fits a sentence or two. A long recording would only be scored up to
+    the first pause. I capped the reference text at 500 characters.
+  - No new packages, so requirements.txt is unchanged.
+
+  I didn't run git add or git commit. The four changed files are
+  Week-5-Task-1/app.py, templates/index.html, static/script.js and
+  static/style.css. To run it, keep using your server (.venv/bin/python 
+  Week-5-Task-1/app.py) and open http://127.0.0.1:5001. Adding #diarize,
+  #translate or #pron to the address opens that tab directly.
+
+✻ Cogitated for 4m 48s · done 2:48 PM
+
+❯  /export                                                                      
+
+⏺ That came through as a chat message instead of a command, probably because of
+  the space before the slash. /export is a built-in Claude Code command, so I
+  can't run it for you. Type it at the start of the prompt with no leading
+  space:
+
+  /export
+
+  Last time it saved the conversation to a .txt file in
+  /Users/zeynepsudeboga/EE471-week5/, and it should do the same now.
+
+✻ Crunched for 4s · done 2:56 PM

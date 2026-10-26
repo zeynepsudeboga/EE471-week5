@@ -105,13 +105,162 @@ button:disabled {
   flex: 1;
 }
 
-/* ---------- Speech to Text ---------- */
-#stt-preview {
+/* ---------- Shared audio input (upload + microphone) ---------- */
+.preview {
   display: block;
   width: 100%;
   margin-top: 12px;
 }
 
-#stt-preview[hidden] {
+.preview[hidden] {
   display: none;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  margin-top: 0;
+  padding: 8px 14px;
+  color: #0078d4;
+  background: #fff;
+  border: 1px solid #c7dcf0;
+}
+
+.tab.active {
+  color: #fff;
+  background: #0078d4;
+  border-color: #0078d4;
+}
+
+/* ---------- Diarization ---------- */
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.segment {
+  padding: 8px 12px;
+  border-left: 4px solid var(--speaker);
+  background: #f7f8fa;
+  border-radius: 4px;
+}
+
+.segment .speaker {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--speaker);
+}
+
+.speaker-0 { --speaker: #0078d4; }
+.speaker-1 { --speaker: #c2410c; }
+.speaker-2 { --speaker: #15803d; }
+.speaker-3 { --speaker: #7e22ce; }
+.speaker-4 { --speaker: #be185d; }
+.speaker-5 { --speaker: #0e7490; }
+.speaker-unknown { --speaker: #777; }
+
+/* ---------- Translation ---------- */
+.checkboxes {
+  gap: 4px 16px;
+}
+
+label.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-weight: normal;
+}
+
+.original {
+  margin: 0;
+}
+
+.translations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.translations li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.translations .lang {
+  flex: 0 0 64px;
+  font-weight: 600;
+}
+
+.translations .text {
+  flex: 1;
+}
+
+.translations button {
+  margin-top: 0;
+  padding: 6px 12px;
+}
+
+/* ---------- Pronunciation assessment ---------- */
+.scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.score {
+  padding: 10px;
+  text-align: center;
+  font-size: 0.85em;
+  color: #555;
+  background: #f7f8fa;
+  border-radius: 4px;
+}
+
+.score span {
+  display: block;
+  font-size: 1.8em;
+  font-weight: 700;
+  color: #222;
+}
+
+.words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.word {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.word small {
+  margin-left: 4px;
+  font-size: 0.7em;
+  font-weight: normal;
+}
+
+.word.good { color: #14532d; background: #dcfce7; }
+.word.medium { color: #7c2d12; background: #ffedd5; }
+.word.poor { color: #7f1d1d; background: #fee2e2; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }

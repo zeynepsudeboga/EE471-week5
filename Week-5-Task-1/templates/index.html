@@ -1,3 +1,28 @@
+{# Upload + microphone controls shared by every section that sends audio. IDs are prefixed per section. #}
+{% macro audio_input(prefix, upload_label) %}
+      <label for="{{ prefix }}-file">Upload an audio file</label>
+      <input type="file" id="{{ prefix }}-file" accept=".wav,.mp3,.m4a,.webm,audio/*">
+      <button id="{{ prefix }}-upload">{{ upload_label }}</button>
+
+      <label>…or record from your microphone</label>
+      <div class="row">
+        <button id="{{ prefix }}-start">Start</button>
+        <button id="{{ prefix }}-stop" disabled>Stop</button>
+        <button id="{{ prefix }}-send" disabled>Send recording</button>
+        <span id="{{ prefix }}-status" class="hint"></span>
+      </div>
+      <audio id="{{ prefix }}-preview" class="preview" controls hidden></audio>
+
+      <div id="{{ prefix }}-error" class="error" hidden></div>
+{% endmacro %}
+
+{% macro language_select(id, options) %}
+      <select id="{{ id }}">
+        {% for code, name in options.items() %}
+        <option value="{{ code }}">{{ name }} ({{ code }})</option>
+        {% endfor %}
+      </select>
+{% endmacro %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +35,15 @@
   <main>
     <h1>Azure Speech Demo</h1>
 
-    <section id="tts">
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="tts">Text to Speech</button>
+      <button class="tab" role="tab" data-tab="stt">Speech to Text</button>
+      <button class="tab" role="tab" data-tab="diarize">Diarization</button>
+      <button class="tab" role="tab" data-tab="translate">Translation</button>
+      <button class="tab" role="tab" data-tab="pron">Pronunciation</button>
+    </nav>
+
+    <section id="tts" class="panel">
       <h2>Text to Speech</h2>
 
       <label for="tts-text">Text</label>
@@ -34,35 +67,76 @@
       </div>
     </section>
 
-    <section id="stt">
+    <section id="stt" class="panel">
       <h2>Speech to Text</h2>
 
       <label for="stt-language">Language</label>
-      <select id="stt-language">
-        {% for code, name in languages.items() %}
-        <option value="{{ code }}">{{ name }} ({{ code }})</option>
-        {% endfor %}
-      </select>
-
-      <label for="stt-file">Upload an audio file</label>
-      <input type="file" id="stt-file" accept=".wav,.mp3,.m4a,.webm,audio/*">
-      <button id="stt-upload">Transcribe file</button>
-
-      <label>…or record from your microphone</label>
-      <div class="row">
-        <button id="stt-start">Start</button>
-        <button id="stt-stop" disabled>Stop</button>
-        <button id="stt-send" disabled>Send recording</button>
-        <span id="stt-status" class="hint"></span>
-      </div>
-      <audio id="stt-preview" controls hidden></audio>
-
-      <div id="stt-error" class="error" hidden></div>
-
+{{ language_select("stt-language", languages) }}
+{{ audio_input("stt", "Transcribe file") }}
       <div id="stt-result" hidden>
         <label for="stt-text">Transcript</label>
         <textarea id="stt-text" rows="6" readonly></textarea>
         <button id="stt-copy">Copy</button>
+      </div>
+    </section>
+
+    <section id="diarize" class="panel">
+      <h2>Real-time Diarization</h2>
+      <p class="hint">Transcribes a conversation and labels who said what (Guest-1, Guest-2, …).</p>
+
+      <label for="diarize-language">Language</label>
+{{ language_select("diarize-language", languages) }}
+{{ audio_input("diarize", "Diarize file") }}
+      <div id="diarize-result" hidden>
+        <label>Conversation</label>
+        <div id="diarize-conversation" class="conversation"></div>
+      </div>
+    </section>
+
+    <section id="translate" class="panel">
+      <h2>Speech Translation</h2>
+
+      <label for="translate-source">Spoken language</label>
+{{ language_select("translate-source", languages) }}
+
+      <label>Translate to</label>
+      <div class="row checkboxes" id="translate-targets">
+        {% for code, (name, voice) in translation_targets.items() %}
+        <label class="check"><input type="checkbox" value="{{ code }}" data-name="{{ name }}"{% if code == "tr" %} checked{% endif %}> {{ name }}</label>
+        {% endfor %}
+      </div>
+{{ audio_input("translate", "Translate file") }}
+      <div id="translate-result" hidden>
+        <label>Original</label>
+        <p id="translate-original" class="original"></p>
+        <label>Translations</label>
+        <ul id="translate-list" class="translations"></ul>
+      </div>
+    </section>
+
+    <section id="pron" class="panel">
+      <h2>Pronunciation Assessment</h2>
+
+      <label for="pron-language">Language</label>
+{{ language_select("pron-language", pronunciation_languages) }}
+
+      <label for="pron-reference">Reference text (what you will read aloud)</label>
+      <textarea id="pron-reference" rows="3" maxlength="500" placeholder="Hello, this is a speech to text test."></textarea>
+{{ audio_input("pron", "Assess file") }}
+      <div id="pron-result" hidden>
+        <div class="scores">
+          <div class="score"><span id="pron-pronunciation"></span>Overall</div>
+          <div class="score"><span id="pron-accuracy"></span>Accuracy</div>
+          <div class="score"><span id="pron-fluency"></span>Fluency</div>
+          <div class="score"><span id="pron-completeness"></span>Completeness</div>
+        </div>
+        <label>Words</label>
+        <p id="pron-words" class="words"></p>
+        <p class="hint legend">
+          <span class="word good">≥ 80 good</span>
+          <span class="word medium">60–79 medium</span>
+          <span class="word poor">&lt; 60 poor / omitted</span>
+        </p>
       </div>
     </section>
   </main>
